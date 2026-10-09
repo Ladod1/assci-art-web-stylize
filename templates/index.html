@@ -3,134 +3,53 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Turn your text into ASCII art banners.">
-  <title>{{if .Result}}Your ASCII art · {{end}}ASCII Art Generator</title>
+  <title>ASCII Art Generator</title>
   <link rel="stylesheet" href="/static/style.css">
-  <script src="/static/theme.js"></script>
 </head>
 <body>
-  <a class="skip-link" href="#main">Skip to content</a>
 
-  <header class="site-header">
-    <div class="container header-inner">
-      <a class="brand" href="/" aria-label="ASCII Art Generator home">
-        <span class="brand-mark" aria-hidden="true">&gt;_</span>
-        <span>ASCII Art</span>
-      </a>
-      <button class="btn btn-ghost btn-icon" type="button" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode" hidden>
-        <span aria-hidden="true" class="theme-icon"></span>
-      </button>
-    </div>
+  <header>
+    <h1>ASCII Art Generator</h1>
+    <p>Write your text, choose a style, then click Generate.</p>
   </header>
 
-  <main id="main" class="container">
-    <section class="intro">
-      <h1>ASCII Art Generator</h1>
-      <p class="lead">Type a message, pick a banner style and turn it into big text made of characters.</p>
-    </section>
+  <main>
+    <form class="card" action="/ascii-art" method="POST">
 
-    <section class="card" aria-labelledby="form-title">
-      <h2 id="form-title" class="card-title"><span class="step" aria-hidden="true">1</span> Write your text</h2>
+      <label for="text">Your text</label>
+      <textarea id="text" name="text" rows="4" maxlength="200" placeholder="Hello" required>{{.Text}}</textarea>
+      <small>Maximum 200 characters.</small>
 
-      <form action="/ascii-art" method="POST" id="ascii-form" novalidate>
-        <div class="field">
-          <div class="field-head">
-            <label for="text">Text</label>
-            <span class="counter" id="counter" aria-live="polite"><span id="count">{{len .Text}}</span> / {{.MaxLength}}</span>
-          </div>
-          <textarea id="text" name="text" rows="4" maxlength="{{.MaxLength}}" required
-            placeholder="Hello World"
-            aria-describedby="text-hint{{if .Error}} text-error{{end}}"
-            {{if .Error}}aria-invalid="true" autofocus{{end}}
-            spellcheck="false">{{.Text}}</textarea>
-          <p class="hint" id="text-hint">Letters, digits, spaces and symbols. Press Enter for a new line, <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to generate.</p>
-          <p class="message message-error" id="text-error" role="alert" {{if not .Error}}hidden{{end}}>
-            <span aria-hidden="true">!</span> <span id="text-error-msg">{{.Error}}</span>
-          </p>
-        </div>
+      {{if .Error}}
+      <p class="error">{{.Error}}</p>
+      {{end}}
 
-        <fieldset class="field">
-          <legend><span class="step" aria-hidden="true">2</span> Choose a banner</legend>
-          <div class="styles">
-            <label class="style-option">
-              <input type="radio" name="style" value="standard" {{if eq .Style "standard"}}checked{{end}} required>
-              <span class="style-card">
-                <span class="style-name">Standard</span>
-                <span class="style-sample" aria-hidden="true"><pre>            _
-    /\     | |
-   /  \    | |__
-  / /\ \   | '_ \
- / ____ \  | |_) |
-/_/    \_\ |_.__/</pre></span>
-                <span class="style-desc">Clean and classic</span>
-              </span>
-            </label>
-            <label class="style-option">
-              <input type="radio" name="style" value="shadow" {{if eq .Style "shadow"}}checked{{end}}>
-              <span class="style-card">
-                <span class="style-name">Shadow</span>
-                <span class="style-sample" aria-hidden="true"><pre>  _|_|   _|
-_|    _| _|_|_|
-_|_|_|_| _|    _|
-_|    _| _|    _|
-_|    _| _|_|_|</pre></span>
-                <span class="style-desc">Bold, blocky letters</span>
-              </span>
-            </label>
-            <label class="style-option">
-              <input type="radio" name="style" value="thinkertoy" {{if eq .Style "thinkertoy"}}checked{{end}}>
-              <span class="style-card">
-                <span class="style-name">Thinkertoy</span>
-                <span class="style-sample" aria-hidden="true"><pre>  O   o
- / \  |
-o---o O-o
-|   | |  |
-o   o o-o</pre></span>
-                <span class="style-desc">Playful connect-the-dots</span>
-              </span>
-            </label>
-          </div>
-        </fieldset>
+      <p class="label">Style</p>
+      <div class="styles">
+        <label class="style">
+          <input type="radio" name="style" value="standard" {{if eq .Style "standard"}}checked{{end}}>
+          <span>Standard</span>
+        </label>
+        <label class="style">
+          <input type="radio" name="style" value="shadow" {{if eq .Style "shadow"}}checked{{end}}>
+          <span>Shadow</span>
+        </label>
+        <label class="style">
+          <input type="radio" name="style" value="thinkertoy" {{if eq .Style "thinkertoy"}}checked{{end}}>
+          <span>Thinkertoy</span>
+        </label>
+      </div>
 
-        <div class="actions">
-          <button class="btn btn-primary" type="submit" id="generate">
-            <span class="spinner" aria-hidden="true"></span>
-            <span class="btn-label">Generate</span>
-          </button>
-          <button class="btn btn-ghost" type="button" id="clear" hidden>Clear</button>
-        </div>
-      </form>
-    </section>
+      <button type="submit">Generate</button>
+    </form>
 
     {{if .Result}}
-    <section class="card result" id="result" aria-labelledby="result-title" tabindex="-1">
-      <div class="result-head">
-        <h2 id="result-title" class="card-title"><span class="step" aria-hidden="true">3</span> Your ASCII art</h2>
-        <div class="result-tools" id="result-tools" hidden>
-          <label class="zoom" for="zoom">
-            <span>Size</span>
-            <input type="range" id="zoom" min="6" max="18" step="1" value="12" aria-label="Art text size">
-          </label>
-          <button class="btn btn-ghost btn-small" type="button" id="download">Download .txt</button>
-          <button class="btn btn-secondary btn-small" type="button" id="copy">Copy</button>
-        </div>
-      </div>
-      <p class="message message-success" role="status">
-        <span aria-hidden="true">&#10003;</span> <span>Generated with the <strong>{{.Style}}</strong> banner.</span>
-      </p>
-      <div class="art-frame">
-        <pre class="art" id="art">{{.Result}}</pre>
-      </div>
+    <section class="card">
+      <p class="success">Done! Here is your text in the {{.Style}} style.</p>
+      <pre class="art">{{.Result}}</pre>
     </section>
     {{end}}
   </main>
 
-  <footer class="site-footer">
-    <div class="container">Made with Go · ASCII Art Web</div>
-  </footer>
-
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
-
-  <script src="/static/app.js"></script>
 </body>
 </html>
