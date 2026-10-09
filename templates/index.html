@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ASCII Art</title>
+</head>
+<body>
+
+  <h1>ASCII Art Generator</h1>
+
+  <form action="/ascii-art" method="POST">
+
+    <label>Text:</label>
+    <textarea name="text" rows="5" cols="50" maxlength="200" required>{{.Text}}</textarea>
+    <small>Maximum 200 characters</small>
+
+    <br><br>
+
+    <label>Style:</label>
+    <select name="style">
+      <option value="standard" {{if eq .Style "standard"}}selected{{end}}>Standard</option>
+      <option value="shadow" {{if eq .Style "shadow"}}selected{{end}}>Shadow</option>
+      <option value="thinkertoy" {{if eq .Style "thinkertoy"}}selected{{end}}>Thinkertoy</option>
+    </select>
+
+    <br><br>
+
+    <button type="submit">Generate</button>
+
+  </form>
+
+  {{if .Result}}
+  <h2>Result</h2>
+  <pre>{{.Result}}</pre>
+  {{end}}
+
+</body>
+</html>
