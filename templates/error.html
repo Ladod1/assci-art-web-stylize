@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Status}} {{.StatusText}} · ASCII Art Generator</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/theme.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/" aria-label="ASCII Art Generator home">
+        <span class="brand-mark" aria-hidden="true">&gt;_</span>
+        <span>ASCII Art</span>
+      </a>
+      <button class="btn btn-ghost btn-icon" type="button" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode" hidden>
+        <span aria-hidden="true" class="theme-icon"></span>
+      </button>
+    </div>
+  </header>
+
+  <main id="main" class="container">
+    <section class="card error-page" aria-labelledby="error-title">
+      <p class="error-code" aria-hidden="true">{{.Status}}</p>
+      <h1 id="error-title">{{.StatusText}}</h1>
+      <p class="lead">{{.Message}}.</p>
+      <div class="actions actions-center">
+        <a class="btn btn-primary" href="/">Back to the generator</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">Made with Go · ASCII Art Web</div>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
