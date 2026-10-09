@@ -1,0 +1,2 @@
+# Banner files are verified by hash: keep them byte-for-byte with LF endings.
+style/*.txt -text

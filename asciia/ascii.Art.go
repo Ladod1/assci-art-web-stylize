@@ -57,12 +57,14 @@ func loadFont(fileName string) (map[rune][]string, error) {
 		return nil, fmt.Errorf("no hash registered for banner %q", bannerName)
 	}
 
-	actualHash := fmt.Sprintf("%x", sha256.Sum256(data))
+	// Git on Windows may check the banners out with CRLF line endings, so
+	// hash the LF-normalised content to get the same result on every OS.
+	content := strings.ReplaceAll(string(data), "\r", "")
+	actualHash := fmt.Sprintf("%x", sha256.Sum256([]byte(content)))
 	if actualHash != expectedHash {
 		return nil, fmt.Errorf("banner %q was modified", bannerName)
 	}
 
-	content := strings.ReplaceAll(string(data), "\r", "")
 	lines := strings.Split(content, "\n")
 
 	font := make(map[rune][]string)
