@@ -16,9 +16,17 @@ import (
 const maxTextLength = 200
 
 type pageData struct {
-	Text   string
-	Style  string
-	Result string
+	Text      string
+	Style     string
+	Result    string
+	Error     string
+	MaxLength int
+}
+
+type errorData struct {
+	Status     int
+	StatusText string
+	Message    string
 }
 
 func HandleRoot(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +43,7 @@ func HandleRoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	renderPage(w, pageData{Style: "standard"})
+	renderPage(w, http.StatusOK, pageData{Style: "standard"})
 }
 
 func HandleAsciiArt(w http.ResponseWriter, r *http.Request) {
@@ -58,20 +66,24 @@ func HandleAsciiArt(w http.ResponseWriter, r *http.Request) {
 	text := r.PostForm.Get("text")
 	style := r.PostForm.Get("style")
 
-	if text == "" {
-		writeHTTPError(w, http.StatusBadRequest, "Text is required")
-		return
-	}
 	if !validStyle(style) {
 		writeHTTPError(w, http.StatusBadRequest, "Invalid banner style")
 		return
 	}
-	if utf8.RuneCountInString(text) > maxTextLength {
-		writeHTTPError(w, http.StatusBadRequest, "Text is too long (maximum 200 characters)")
-		return
+
+	// Input problems are shown next to the form so the user can fix them
+	// without losing what they typed.
+	data := pageData{Text: text, Style: style}
+	switch {
+	case text == "":
+		data.Error = "Please enter some text to convert."
+	case utf8.RuneCountInString(text) > maxTextLength:
+		data.Error = fmt.Sprintf("Text is too long (maximum %d characters).", maxTextLength)
+	case !validText(text):
+		data.Error = "Only printable ASCII characters (letters, digits, spaces and symbols like !?#) are supported."
 	}
-	if !validText(text) {
-		writeHTTPError(w, http.StatusBadRequest, "Invalid text: only printable ASCII characters are supported")
+	if data.Error != "" {
+		renderPage(w, http.StatusBadRequest, data)
 		return
 	}
 
@@ -86,13 +98,16 @@ func HandleAsciiArt(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	renderPage(w, pageData{Text: text, Style: style, Result: result})
+	data.Result = result
+	renderPage(w, http.StatusOK, data)
 }
 
-func renderPage(w http.ResponseWriter, data pageData) {
-	tmpl, err := template.ParseFiles("templates/index.html")
+func renderPage(w http.ResponseWriter, status int, data pageData) {
+	data.MaxLength = maxTextLength
+
+	page, err := executeTemplate("templates/index.html", data)
 	if err != nil {
-		log.Printf("parse template: %v", err)
+		log.Printf("render page: %v", err)
 		if errors.Is(err, os.ErrNotExist) {
 			writeHTTPError(w, http.StatusNotFound, "Page not found")
 			return
@@ -101,20 +116,43 @@ func renderPage(w http.ResponseWriter, data pageData) {
 		return
 	}
 
-	var page bytes.Buffer
-	if err := tmpl.Execute(&page, data); err != nil {
-		log.Printf("render template: %v", err)
-		writeHTTPError(w, http.StatusInternalServerError, "Internal server error")
+	writePage(w, status, page)
+}
+
+// writeHTTPError renders the styled error page, falling back to plain text
+// if the error template itself cannot be rendered.
+func writeHTTPError(w http.ResponseWriter, status int, message string) {
+	page, err := executeTemplate("templates/error.html", errorData{
+		Status:     status,
+		StatusText: http.StatusText(status),
+		Message:    message,
+	})
+	if err != nil {
+		log.Printf("render error page: %v", err)
+		http.Error(w, fmt.Sprintf("%d %s: %s", status, http.StatusText(status), message), status)
 		return
 	}
 
+	writePage(w, status, page)
+}
+
+func executeTemplate(file string, data any) (*bytes.Buffer, error) {
+	tmpl, err := template.ParseFiles(file)
+	if err != nil {
+		return nil, err
+	}
+
+	var page bytes.Buffer
+	if err := tmpl.Execute(&page, data); err != nil {
+		return nil, err
+	}
+	return &page, nil
+}
+
+func writePage(w http.ResponseWriter, status int, page *bytes.Buffer) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(status)
 	if _, err := page.WriteTo(w); err != nil {
 		log.Printf("write response: %v", err)
 	}
-}
-
-func writeHTTPError(w http.ResponseWriter, status int, message string) {
-	http.Error(w, fmt.Sprintf("%d %s: %s", status, http.StatusText(status), message), status)
 }
